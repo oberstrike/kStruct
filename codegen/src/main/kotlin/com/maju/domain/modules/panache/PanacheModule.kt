@@ -14,29 +14,34 @@ import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepositoryBase
 import kotlin.reflect.KClass
 
 @KotlinPoetMetadataPreview
-class PanacheModule : AbstractModule() {
+class PanacheModule : AbstractModule()  {
 
     override val supportedTypes = listOf<KClass<*>>(
         PanacheRepository::class
     )
 
-    override fun createStatement(
-        converterName: String,
-        convertExpression: String,
-        targetType: CKType,
-        paramName: String
-    ): String {
-        return "$paramName.project(${targetType.className.simpleName}::class.java)"
+    private val panacheQueryCreator = PanacheQueryCreator()
+
+    class PanacheQueryCreator : IStatementCreator{
+        override fun createStatement(
+            converterName: String,
+            convertExpression: String,
+            targetType: CKType,
+            paramName: String
+        ): String {
+            return "$paramName.project(${targetType.className.simpleName}::class.java)"
+        }
+
+        override fun isSupported(type: CKType): Boolean {
+            return type.className == PANACHE_QUERY
+        }
     }
 
-    override fun isSupported(type: CKType): Boolean {
-        return type.className == PANACHE_QUERY
-    }
+
 
 
     override fun createMethodEntities(
-        kmType: ImmutableKmType,
-        statementCreator: IStatementCreator
+        kmType: ImmutableKmType
     ): List<MethodEntity> {
         val methodEntities = mutableListOf<MethodEntity>()
 
@@ -68,7 +73,7 @@ class PanacheModule : AbstractModule() {
 
         for (function in functions) {
             val methodEntity =
-                CustomMethodEntityGenerator(function, converterTargetType, idType, idName, statementCreator).generate()
+                CustomMethodEntityGenerator(function, converterTargetType, idType, idName, panacheQueryCreator).generate()
             if (methodEntity != null) {
                 methodEntities.add(methodEntity)
             }
