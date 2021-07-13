@@ -1,6 +1,6 @@
 package com.maju.domain.proxy
 
-import com.maju.domain.generator.ParameterEntity
+import com.maju.domain.entities.ParameterEntity
 import com.maju.utils.IGenerator
 import com.maju.utils.toParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterSpec

@@ -1,10 +1,9 @@
-package com.maju.domain.generator
+package com.maju.domain.entities
 
 import com.maju.utils.CKType
 import com.maju.utils.firstCharToLower
 import com.maju.utils.parameterizedToType
 import com.squareup.kotlinpoet.LIST
-import java.util.*
 
 data class ConverterEntity(
     val type: CKType,

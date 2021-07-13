@@ -1,26 +1,23 @@
 package com.maju
 
 import com.maju.cli.RepositoryProxy
-import com.maju.domain.generator.MethodEntity
-import com.maju.domain.entities.ConverterEntityGenerator
-import com.maju.domain.entities.MethodEntityGenerator
-import com.maju.domain.entities.RepositoryEntityGenerator
+import com.maju.domain.entities.MethodEntity
+import com.maju.domain.generator.ConverterEntityGenerator
+import com.maju.domain.generator.MethodEntityGenerator
+import com.maju.domain.generator.RepositoryEntityGenerator
 import com.maju.domain.proxy.RepositoryProxyGenerator
 import com.google.auto.service.AutoService
 import com.maju.cli.IConverter
-import com.maju.domain.generator.ConverterEntity
-import com.maju.domain.generator.ExtensionEntity
-import com.maju.domain.entities.ParameterEntityGenerator
-import com.maju.domain.entities.PanacheMethodEntityGenerator
+import com.maju.domain.entities.ConverterEntity
+import com.maju.domain.generator.ParameterEntityGenerator
+import com.maju.domain.modules.IModule
+import com.maju.domain.modules.hibernate.HibernateModule
+import com.maju.domain.modules.panache.PanacheModule
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
 import com.squareup.kotlinpoet.metadata.specs.ClassInspector
 import com.maju.utils.*
 import com.squareup.kotlinpoet.metadata.*
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepository
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepositoryBase
-import org.jetbrains.kotlin.util.collectionUtils.concat
-import org.springframework.data.jpa.repository.JpaRepository
 import java.io.File
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
@@ -28,6 +25,7 @@ import javax.lang.model.element.ElementKind
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
+@KotlinPoetMetadataPreview
 @AutoService(Processor::class)
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedOptions(FileGenerator.KAPT_KOTLIN_GENERATED_OPTION_NAME)
@@ -40,6 +38,10 @@ class FileGenerator : AbstractProcessor() {
     @KotlinPoetMetadataPreview
     private lateinit var elementClassInspector: ClassInspector
 
+    private val modules = listOf<IModule>(
+        HibernateModule(), PanacheModule()
+    )
+
     @ExperimentalStdlibApi
     override fun getSupportedAnnotationTypes(): MutableSet<String> {
         return mutableSetOf(RepositoryProxy::class.java.name)
@@ -49,15 +51,14 @@ class FileGenerator : AbstractProcessor() {
         return SourceVersion.latest()
     }
 
-    @KotlinPoetMetadataPreview
     override fun process(
         annotations: MutableSet<out TypeElement>,
         roundEnv: RoundEnvironment
     ): Boolean {
         printNote("Starting the generation of proxy classes")
         val elementUtils = processingEnv.elementUtils
-        val types = processingEnv.typeUtils
-        elementClassInspector = ElementsClassInspector.create(elementUtils, types)
+        val typeUtils = processingEnv.typeUtils
+        elementClassInspector = ElementsClassInspector.create(elementUtils, typeUtils)
 
         val repositories = roundEnv.getElementsAnnotatedWith(RepositoryProxy::class.java) ?: mutableSetOf()
 
@@ -71,43 +72,6 @@ class FileGenerator : AbstractProcessor() {
 
             val inheritedFunctions = inheritedInterfacesKmClasses.flatMap { it.functions }
             printNote("The class $repositoryName owns the inherited functions: ${inheritedFunctions.joinToString { it.name }}")
-
-            val panacheKmType =
-                repositoryKmClazz.supertypes
-                    .findLast { (PanacheRepository::class.qualifiedName) == it.className().canonicalName }
-            var isPanacheRepository = null != panacheKmType
-            printNote("PanacheRepository: $isPanacheRepository")
-
-            var panacheEntity: ExtensionEntity? = null
-            var jpaEntity: ExtensionEntity? = null
-
-            if (isPanacheRepository) {
-                printNote("The class $repositoryName inherits the repository: ${PanacheRepository::class.qualifiedName}")
-                val entityType = panacheKmType!!.arguments.first().type!!.toType()
-                val entityContainer = elementClassInspector.declarationContainerFor(entityType.className)
-                val idProperty = entityContainer.properties.firstOrNull { it.name == "id" }
-                if (idProperty == null) {
-                    printWarning("The panache entity: $repositoryName has no id, so no panache methods will be generated.")
-                } else {
-                    val idType = idProperty.returnType.toType()
-                    panacheEntity = ExtensionEntity(entityType, idType)
-                    isPanacheRepository = false
-                }
-            }
-
-            val jpaRepositoryKmType = repositoryKmClazz.supertypes
-                .findLast { (JpaRepository::class.qualifiedName) == it.className().canonicalName }
-
-            val isJpaRepository = null != jpaRepositoryKmType
-            printNote("Jpa Repository: $isJpaRepository")
-
-            if (isJpaRepository) {
-                printNote("The class $repositoryName inherits ${JpaRepository::class.qualifiedName}")
-                val entityType = jpaRepositoryKmType!!.arguments.first().type!!.toType()
-                val idType = jpaRepositoryKmType.arguments[1].type!!.toType()
-                jpaEntity = ExtensionEntity(entityType, idType)
-            }
-
 
             val repositoryProxyAnnotation = repositoryElement.getAnnotation(RepositoryProxy::class.java)
 
@@ -140,8 +104,6 @@ class FileGenerator : AbstractProcessor() {
 
                     ).generate()
                 }.toList()
-
-
 
             printNote("There were ${converterEntities.size} converters found")
 
@@ -180,50 +142,15 @@ class FileGenerator : AbstractProcessor() {
             }
             printNote("There were ${methodEntities.size} methods found")
 
-            if (panacheEntity != null) {
-                printNote("Generating the panache functions")
-
-                val converterEntity = converterEntities.firstOrNull() ?: throw Exception("")
-                val panacheRepositoryKmClass = PanacheRepositoryBase::class.toImmutableKmClass()
-                val functions = panacheRepositoryKmClass.functions
-                val converterTargetType = converterEntity.targetType
-                val idType = panacheEntity.idType
-
-                for (function in functions) {
-                    val methodEntity = PanacheMethodEntityGenerator(function, converterTargetType, idType).generate()
-                    if (methodEntity != null) {
-                        methodEntities.add(methodEntity)
-                    }
-                }
-            }
-
-            if (jpaEntity != null) {
-                printNote("Generating the jpa functions")
-                val converterEntity = converterEntities.firstOrNull() ?: throw Exception("")
-                val jpaRepositoryKmClass = com.maju.jpa.JpaRepository::class.toImmutableKmClass()
-                val crudRepositoryKmClass = com.maju.jpa.CrudRepository::class.toImmutableKmClass()
-                val pagingAndSortingRepositoryKmClass = com.maju.jpa.CrudRepository::class.toImmutableKmClass()
-
-                val functions = jpaRepositoryKmClass.functions.concat(crudRepositoryKmClass.functions)
-                    .concat(pagingAndSortingRepositoryKmClass.functions)!!
-                val converterTargetType = converterEntity.targetType
-
-                val idType = jpaEntity.idType
-                for (function in functions) {
-                    val methodEntity = PanacheMethodEntityGenerator(function, converterTargetType, idType).generate()
-                    if (methodEntity != null) {
-                        methodEntities.add(methodEntity)
-                    }
-                }
-            }
-
+            methodEntities.addAll(
+                modules.flatMap { module -> module.process(repositoryKmClazz, converterEntities, elementClassInspector)}
+            )
 
             val repositoryEntity = RepositoryEntityGenerator(
                 type = repositoryKmClazz.toType(),
                 converters = converterEntities,
                 methods = methodEntities,
-                name = "${repositoryName}Proxy",
-                panacheEntity = panacheEntity
+                name = "${repositoryName}Proxy"
             ).generate()
 
             val targetPackageName = processingEnv.elementUtils.getPackageOf(repositoryElement).toString()

@@ -2,12 +2,15 @@ package com.maju.domain.proxy
 
 
 import com.maju.cli.*
-import com.maju.domain.generator.RepositoryEntity
-import com.maju.domain.proxy.dependency.DependencyGeneratorFactory
+import com.maju.domain.entities.RepositoryEntity
+import com.maju.domain.proxy.dependency.DefaultDependencyGenerator
+import com.maju.domain.proxy.dependency.IDependencyGenerator
+import com.maju.domain.proxy.dependency.PropertyDependencyGenerator
 import com.maju.utils.IGenerator
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 
+@KotlinPoetMetadataPreview
 class RepositoryProxyGenerator(
     private val packageName: String,
     private val repositoryEntity: RepositoryEntity,
@@ -15,14 +18,21 @@ class RepositoryProxyGenerator(
     private val componentModel: ComponentModel = ComponentModel.DEFAULT
 ) : IGenerator<FileSpec> {
 
-    @KotlinPoetMetadataPreview
+    private val generators: List<IDependencyGenerator> = listOf(
+        DefaultDependencyGenerator(), PropertyDependencyGenerator()
+    )
+
+    private fun aDependencyGenerator(injectionStrategy: InjectionStrategy): IDependencyGenerator {
+        return generators.first { it.injectionStrategies.contains(injectionStrategy) }
+    }
+
     override fun generate(): FileSpec {
         val repositoryClassName = repositoryEntity.type.className
         val repositorySimpleName = repositoryClassName.simpleName
         val repositoryProxyTypeSpecBuilder = TypeSpec.classBuilder("${repositorySimpleName}Proxy")
         val converterClassNames = repositoryEntity.converters.map { it.type.className }
 
-        val dependency = DependencyGeneratorFactory.aDependencyGenerator(injectionStrategy)
+        val dependency = aDependencyGenerator(injectionStrategy)
             .getDependency(repositoryClassName, converterClassNames, componentModel)
 
         with(dependency) {

@@ -1,4 +1,4 @@
-package com.maju.jpa
+package com.maju.domain.modules.hibernate
 
 import org.springframework.data.repository.NoRepositoryBean
 import org.springframework.data.repository.Repository

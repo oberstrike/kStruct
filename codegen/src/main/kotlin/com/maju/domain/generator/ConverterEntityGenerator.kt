@@ -1,6 +1,6 @@
-package com.maju.domain.entities
+package com.maju.domain.generator
 
-import com.maju.domain.generator.ConverterEntity
+import com.maju.domain.entities.ConverterEntity
 import com.maju.utils.IGenerator
 import com.maju.utils.CKType
 

@@ -3,10 +3,10 @@ package codegen.unit
 
 import com.maju.cli.IConverter
 import com.maju.cli.RepositoryProxy
-import com.maju.domain.generator.ConverterEntity
-import com.maju.domain.generator.MethodEntity
-import com.maju.domain.generator.ParameterEntity
-import com.maju.domain.generator.RepositoryEntity
+import com.maju.domain.entities.ConverterEntity
+import com.maju.domain.entities.MethodEntity
+import com.maju.domain.entities.ParameterEntity
+import com.maju.domain.entities.RepositoryEntity
 import com.maju.domain.proxy.RepositoryProxyGenerator
 import com.maju.utils.parameterizedToType
 import com.maju.utils.toType
