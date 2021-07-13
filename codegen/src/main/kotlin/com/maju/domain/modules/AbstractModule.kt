@@ -13,7 +13,7 @@ import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepository
 import kotlin.reflect.KClass
 
 @KotlinPoetMetadataPreview
-abstract class AbstractModule : IModule, IStatementCreator {
+abstract class AbstractModule : IModule {
 
     open val supportedTypes: List<KClass<*>> = listOf()
 
@@ -42,7 +42,7 @@ abstract class AbstractModule : IModule, IStatementCreator {
         return classes
     }
 
-    abstract fun createMethodEntities(kmType: ImmutableKmType, statementCreator: IStatementCreator): List<MethodEntity>
+    abstract fun createMethodEntities(kmType: ImmutableKmType): List<MethodEntity>
 
 
     override fun process(
@@ -59,7 +59,7 @@ abstract class AbstractModule : IModule, IStatementCreator {
         val methodEntities = mutableListOf<MethodEntity>()
 
         for (moduleClass in moduleTypes) {
-            methodEntities.addAll(createMethodEntities(moduleClass, this))
+            methodEntities.addAll(createMethodEntities(moduleClass))
 
         }
         return methodEntities

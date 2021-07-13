@@ -76,7 +76,6 @@ class StatementsGenerator(
         )
 
 
-
         statements.add("val $targetName = $createStatement")
 
         return targetName
@@ -88,12 +87,7 @@ class StatementsGenerator(
         val targetType = converterEntity?.targetType ?: return "return $targetName"
         val converterName = converterEntity.getName()
 
-
         val generator = methodEntity.statementCreator
-
-        if(generator != null){
-            println("test")
-        }
 
         val converters = listOfNotNull(
             CollectionStatementGenerator(),

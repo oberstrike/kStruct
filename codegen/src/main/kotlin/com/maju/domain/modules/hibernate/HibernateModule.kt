@@ -22,25 +22,9 @@ class HibernateModule : AbstractModule() {
         org.springframework.data.jpa.repository.JpaRepository::class
     )
 
-    override fun isSupported(type: CKType): Boolean {
-        return true
-    }
-
-
-    override fun createStatement(
-        converterName: String,
-        convertExpression: String,
-        targetType: CKType,
-        paramName: String
-    ): String {
-        val creator = statementCreators.first { it.isSupported(targetType) }
-        return creator.createStatement(converterName, convertExpression, targetType, paramName)
-    }
-
 
     override fun createMethodEntities(
-        kmType: ImmutableKmType,
-        statementCreator: IStatementCreator
+        kmType: ImmutableKmType
     ): List<MethodEntity> {
         val methodEntities = mutableListOf<MethodEntity>()
 
@@ -77,9 +61,7 @@ class HibernateModule : AbstractModule() {
 
         for (function in functions) {
             val methodEntity =
-                CustomMethodEntityGenerator(function, converterTargetType, idType, idName, statementCreator).generate(
-
-                )
+                CustomMethodEntityGenerator(function, converterTargetType, idType, idName, null).generate()
             if (methodEntity != null) {
                 methodEntities.add(methodEntity)
             }
