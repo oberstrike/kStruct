@@ -1,4 +1,4 @@
-package com.maju.domain.generator
+package com.maju.domain.entities
 
 import com.maju.utils.CKType
 

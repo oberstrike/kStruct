@@ -1,7 +1,7 @@
 package com.maju.domain.proxy
 
-import com.maju.domain.generator.ConverterEntity
-import com.maju.domain.generator.MethodEntity
+import com.maju.domain.entities.ConverterEntity
+import com.maju.domain.entities.MethodEntity
 import com.maju.utils.IGenerator
 import com.maju.domain.proxy.statement.StatementsGenerator
 import com.maju.utils.toParameterizedTypeName

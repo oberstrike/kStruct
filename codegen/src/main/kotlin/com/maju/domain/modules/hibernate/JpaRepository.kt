@@ -1,4 +1,4 @@
-package com.maju.jpa
+package com.maju.domain.modules.hibernate
 
 import org.springframework.data.domain.Example
 import org.springframework.data.domain.Sort

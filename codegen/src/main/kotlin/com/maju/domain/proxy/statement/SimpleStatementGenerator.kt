@@ -1,17 +1,23 @@
 package com.maju.domain.proxy.statement
 
-import com.squareup.kotlinpoet.ClassName
+import com.maju.domain.modules.IStatementCreator
+import com.maju.utils.CKType
 
-class SimpleStatementGenerator(
-    private val converterName: String,
-    private val convertExpressions: String
-): StatementGenerator() {
+class SimpleStatementGenerator : IStatementCreator {
 
-
-    override val supportedTypes: List<ClassName>
-        get() = listOf()
-
-    override fun createStatement(paramName: String): String {
-        return "$converterName.$convertExpressions($paramName)"
+    override fun createStatement(
+        converterName: String,
+        convertExpression: String,
+        targetType: CKType,
+        paramName: String
+    ): String {
+        return "${converterName}.${convertExpression}($paramName)"
     }
+
+
+    override fun isSupported(type: CKType): Boolean {
+        return true
+    }
+
 }
+
