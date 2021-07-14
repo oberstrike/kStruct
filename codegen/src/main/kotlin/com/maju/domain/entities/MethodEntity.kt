@@ -1,7 +1,6 @@
 package com.maju.domain.entities
 
 import com.maju.domain.modules.IStatementCreator
-import com.maju.domain.proxy.statement.SimpleStatementGenerator
 import com.maju.utils.CKType
 
 data class MethodEntity(

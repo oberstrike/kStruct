@@ -2,14 +2,13 @@ package com.maju.domain.modules
 
 import com.maju.domain.entities.ConverterEntity
 import com.maju.domain.entities.MethodEntity
-import com.maju.domain.proxy.statement.CollectionStatementGenerator
-import com.maju.domain.proxy.statement.SimpleStatementGenerator
+import com.maju.domain.proxy.statement.utils.CollectionStatementGenerator
+import com.maju.domain.proxy.statement.utils.SimpleStatementGenerator
 import com.maju.utils.className
 import com.squareup.kotlinpoet.metadata.ImmutableKmClass
 import com.squareup.kotlinpoet.metadata.ImmutableKmType
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.ClassInspector
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepository
 import kotlin.reflect.KClass
 
 @KotlinPoetMetadataPreview

@@ -1,4 +1,4 @@
-package com.maju.domain.proxy.statement
+package com.maju.domain.proxy.statement.utils
 
 import com.maju.domain.modules.IStatementCreator
 import com.maju.utils.CKType
