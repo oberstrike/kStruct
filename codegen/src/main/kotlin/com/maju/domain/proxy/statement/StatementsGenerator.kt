@@ -3,24 +3,35 @@ package com.maju.domain.proxy.statement
 import com.maju.domain.entities.ConverterEntity
 import com.maju.domain.entities.MethodEntity
 import com.maju.domain.entities.ParameterEntity
-import com.maju.utils.IGenerator
+import com.maju.domain.modules.IStatementCreator
+import com.maju.domain.proxy.statement.utils.CollectionStatementGenerator
+import com.maju.domain.proxy.statement.utils.SimpleStatementGenerator
 import com.maju.utils.CKType
-import org.jetbrains.kotlin.builtins.StandardNames.FqNames.target
 
 class StatementsGenerator(
-    private val methodEntity: MethodEntity,
-    private val converterEntities: List<ConverterEntity>
-) : IGenerator<List<String>> {
-
-    private val statements = mutableListOf<String>()
+    methodEntity: MethodEntity,
+    converterEntities: List<ConverterEntity>
+) : AbstractStatementsGenerator(
+    methodEntity, converterEntities
+) {
 
     private val resultVariableName = "result"
 
 
-    override fun generate(): List<String> {
+    override fun generate(): List<String> = createStatement {
         val returnType = methodEntity.returnType
 
-        val allParams = methodEntity.parameters.joinToString(",·") { param -> analyseParam(param) }
+        val allParamNames = methodEntity.parameters
+            .map { it.copy(name = getVarNameOfParam(it)) }
+
+        val allParams = allParamNames.joinToString(",·") { it.name }
+
+
+        val allParamsVars = allParamNames
+            .filter { it.name.contains("Model") }
+            .map { createParam(it) }
+
+        addStatements(allParamsVars)
 
         var resultStatement = "val $resultVariableName = repository.·${methodEntity.name}·(·$allParams·)"
 
@@ -28,9 +39,8 @@ class StatementsGenerator(
             resultStatement += "?: return null"
         }
 
-        statements.add(resultStatement)
-        statements.add(analyseReturnType(returnType))
-        return statements
+        addStatement(resultStatement)
+        addStatement(analyseReturnType(returnType))
     }
 
     private fun getConverterByTargetType(target: CKType): ConverterEntity? {
@@ -45,66 +55,56 @@ class StatementsGenerator(
 
     }
 
-    private fun analyseParam(param: ParameterEntity): String {
+    private fun getVarNameOfParam(param: ParameterEntity): String {
         val paramType = param.type
         val converterEntity = getConverterByTargetType(paramType)
-
         var targetName = param.name
-        val originName = param.name
-
-        val targetType = converterEntity?.targetType ?: return targetName
-
+        converterEntity?.targetType ?: return targetName
         targetName = "${param.name}Model"
-        val converterName = converterEntity.getName()
+        return targetName
+    }
 
-        val generator = methodEntity.statementCreator
 
+    private fun createParam(param: ParameterEntity): String {
+        val paramType = param.type
+        val converterEntity = getConverterByTargetType(paramType)
+        val originName = param.name.removeSuffix("Model")
+        val targetName = param.name
+        val targetType = converterEntity?.targetType!!
 
-        val converters = listOfNotNull(
-            CollectionStatementGenerator(),
-            generator,
-            SimpleStatementGenerator()
-        )
-
-        val targetGenerator = converters.first { it.isSupported(paramType) }
-
-        val createStatement = targetGenerator.createStatement(
-            converterName,
+        val createStatement = getStatementCreator(paramType).createStatement(
+            converterEntity.getName(),
             converterEntity.targetToOriginFunctionName,
             targetType,
             originName
         )
 
-
-        statements.add("val $targetName = $createStatement")
-
-        return targetName
+        return "val $targetName = $createStatement"
     }
 
     private fun analyseReturnType(returnType: CKType): String {
         val converterEntity = getConverterByTargetType(returnType)
-        val targetName = "result"
-        val targetType = converterEntity?.targetType ?: return "return $targetName"
-        val converterName = converterEntity.getName()
 
-        val generator = methodEntity.statementCreator
+        val targetType = converterEntity?.targetType ?: return "return $resultVariableName"
 
-        val converters = listOfNotNull(
-            CollectionStatementGenerator(),
-            generator,
-            SimpleStatementGenerator()
-        )
-
-        val targetGenerator = converters.first { it.isSupported(returnType) }
-
-        val createStatement = targetGenerator.createStatement(
-            converterName,
+        val createStatement = getStatementCreator(returnType).createStatement(
+            converterEntity.getName(),
             converterEntity.originToTargetFunctionName,
             targetType,
-            targetName
+            resultVariableName
         )
 
         return "return $createStatement"
+    }
+
+    private fun getStatementCreator(returnType: CKType): IStatementCreator {
+        val statementCreators = listOfNotNull(
+            CollectionStatementGenerator(),
+            methodEntity.statementCreator,
+            SimpleStatementGenerator()
+        )
+
+        return statementCreators.first { it.isSupported(returnType) }
     }
 
 }

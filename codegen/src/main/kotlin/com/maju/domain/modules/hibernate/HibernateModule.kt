@@ -2,17 +2,12 @@ package com.maju.domain.modules.hibernate
 
 import com.maju.domain.entities.MethodEntity
 import com.maju.domain.modules.AbstractModule
-import com.maju.domain.modules.IStatementCreator
 import com.maju.domain.modules.panache.CustomMethodEntityGenerator
-import com.maju.domain.proxy.statement.CollectionStatementGenerator
-import com.maju.domain.proxy.statement.SimpleStatementGenerator
-import com.maju.utils.CKType
 import com.maju.utils.concatAll
 import com.maju.utils.toType
 import com.squareup.kotlinpoet.metadata.ImmutableKmType
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.toImmutableKmClass
-import org.jetbrains.kotlin.util.collectionUtils.concat
 import kotlin.reflect.KClass
 
 @KotlinPoetMetadataPreview
